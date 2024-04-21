@@ -1,43 +1,37 @@
-
 import QuestionCard from "../Components/QuestionCard";
 import "./LandingScreen.css";
-
 import React, { useEffect, useState } from "react";
 
 const LandingScreen = () => {
-  const [questionData, setQuestionData] = useState(() => {
-    const savedData = localStorage.getItem("quiz_questions");
-    const parsedData = JSON.parse(savedData);
-    return parsedData || [];
-  });
+  const [questionData, setQuestionData] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score , setScore] = useState(0);
+  const [score, setScore] = useState(0);
 
   useEffect(() => {
-    const url = "https://opentdb.com/api.php?amount=10";
+    const url = "https://opentdb.com/api.php?amount=10";  
+    
     if (questionData.length === 0) {
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
-          const questionArray = data.results.map((elem) => {
-            const obj = {
+          console.log(data.results);
+          if (data.results) {
+            const formattedQuestions = data.results.map((elem) => ({
               question: elem.question,
               options: [...elem.incorrect_answers, elem.correct_answer],
               correct_answer: elem.correct_answer,
               score: 0,
-            };
-            return obj;
-          });
-
-          setQuestionData(questionArray);
-          localStorage.setItem("quiz_questions", JSON.stringify(questionArray));
+            }));
+            setQuestionData(formattedQuestions);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching quiz questions:", error);
         });
     }
-  });
+  }, [questionData.length]);
 
-  
-
-  function restartHandler(){
+  function restartHandler() {
     setScore(0);
     setCurrentQuestionIndex(0);
   }
@@ -51,14 +45,22 @@ const LandingScreen = () => {
           options={questionData[currentQuestionIndex].options}
           correct_answer={questionData[currentQuestionIndex].correct_answer}
           currentQuestionIndex={currentQuestionIndex}
-          setCurrentQuestionIndex={setCurrentQuestionIndex} score = {score} setScore = {setScore}
+          setCurrentQuestionIndex={setCurrentQuestionIndex}
+          score={score}
+          setScore={setScore}
         />
       ) : (
-        currentQuestionIndex > 0 ? <div id="quiz_end_card">
-            <p>Quiz Ended</p>
-            <p>Your Score :{score}</p>
-            <button onClick={restartHandler} className="btn">Restart</button>
-        </div> : "Loading..."
+        <div id="quiz_end_card">
+          <p>{questionData.length === 0 ? "Loading..." : "Quiz Ended"}</p>
+          {currentQuestionIndex > 0 && (
+            <>
+              <p>Your Score: {score}</p>
+              <button onClick={restartHandler} className="btn">
+                Restart
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
